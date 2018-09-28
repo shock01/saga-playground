@@ -1,0 +1,25 @@
+{
+  "name": "saga-playground",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "mocha dist --recursive"
+  },
+  "author": "spwhock@gmail.com",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chai": "^4.1.5",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.11.2",
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0",
+    "sinon": "^6.3.4",
+    "typescript": "^3.0.3"
+  },
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@types/winston": "^2.4.4",
+    "winston": "^3.1.0"
+  }
+}
