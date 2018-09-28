@@ -46,5 +46,14 @@ describe('saga process test', () => {
         it('should return nextEvent_1_1 and nextEvent_1_2 for nextState_1',
             () => expect(saga.eventsForState('nextState_1')).to.eql(['nextEvent_1_1', 'nextEvent_1_2']));
 
+        context('sage state', () => {
+
+            it('should return null for unknown state of a saga',
+                () => expect(saga.state('nextState_1_unknown')).to.be.null);
+
+            it('should return not null for knonwn state of a saga',
+                () => expect(saga.state('nextState_1')).not.to.be.null);
+        });
     });
+
 });

@@ -1,7 +1,6 @@
 import Saga from "../domain/saga";
 import * as logger from "winston";
 
-
 logger.configure({
     level: process.env.LOG_LEVEL_SAGA_PROCESS || 'debug',
     transports: [
@@ -47,13 +46,54 @@ export interface ProcessState<T> {
 export interface Process {
     handleEvent<T>(event: Event<T>): void;
 }
+
+
+// thenables on events
+// next state 
+export class SagaState<T> {
+
+    protected events: Set<string> = new Set();
+
+    constructor(private sagaProcess: SagaProcess<T>) {
+
+    }
+
+    static Builder = <T>(sagaProcess: SagaProcess<T>) => {
+        const state = new SagaState(sagaProcess);
+        const builder = {
+            withEvents: (events: Set<string>) => {
+                state.events = events;
+                return builder;
+            },
+            build: () => state
+        }
+        return builder;
+    }
+}
+
+export interface StateEvent<T> {
+    readonly eventType: string;
+    readonly supplier: WhenSupplier<T>;
+    readonly thenables: ThenSupplier<T>[];
+}
+
 export class SagaProcess<T> {
 
     private duringStates: Set<string> = new Set();
-    private stateEvents: Map<string, Set<string>> = new Map();
+    private stateEvents: Map<string, Map<string, StateEvent<T>>> = new Map();
 
-    constructor(private initialState: string) {
+    /**
+     * Map<string, Map<event, StateEvent>
+     * 
+     * interface StateEvent
+     * eventType: string
+     * supplier: Supplier
+     * thenables: Supplier
+     *  
+     */
 
+    constructor(private initialState: string,
+        public payload: T = <any>{}) {
     }
 
     /**
@@ -70,10 +110,23 @@ export class SagaProcess<T> {
         return Array.from(this.duringStates);
     }
 
+    state(state: string): SagaState<T> {
+        if (this.duringStates.has(state)) {
+            // return with Builder Pattern
+            return SagaState.Builder(this)
+                //.withEvents(this.stateEvents.get(state))
+                // we need to know the next state to proceed
+                // the thenables
+                // the complete
+                .build();
+        }
+        return null;
+    }
+
     get events(): string[] {
         let events = new Set<string>();
         for (let values of this.stateEvents.values()) {
-            for (let value of values) {
+            for (let value of values.keys()) {
                 events.add(value);
             }
         }
@@ -89,7 +142,7 @@ export class SagaProcess<T> {
         if (!this.stateEvents.has(state)) {
             return [];
         }
-        return Array.from(this.stateEvents.get(state));
+        return Array.from(this.stateEvents.get(state).keys());
     }
 
     /**
@@ -105,16 +158,23 @@ export class SagaProcess<T> {
     /**
      * 
      * @param {string} state the state to which the event applies to
-     * @param {string} event 
+     * @param {string} eventType 
      * @param {Supplier<T>?} supplier supplier to be called when event is triggered
      */
-    when(state: string, event: string, supplier?: WhenSupplier<T>): SagaProcess<T> {
-        let events = new Set<string>();
+    when(state: string, eventType: string, supplier?: WhenSupplier<T>): SagaProcess<T> {
+        let events = new Map<string, StateEvent<T>>();
+
         if (this.stateEvents.has(state)) {
             events = this.stateEvents.get(state);
         }
-        events.add(event);
-        logger.debug(`[SageProcess.when] adding: ${event} for state: ${state}, values: ${Array.from(events)}`);
+        if (events.has(eventType)) {
+            return this;
+        }
+        events.set(eventType, {
+            eventType,
+            supplier,
+            thenables: []
+        });
         this.stateEvents.set(state, events);
         return this;
     }
