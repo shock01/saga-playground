@@ -21,7 +21,8 @@ const instance = () => {
         .next('nextState_2')
         .during('nextState_2')
         .when('nextEvent_2', (): any => null)
-        .complete();
+        .complete()
+        .build();
 };
 
 describe('saga process test', () => {

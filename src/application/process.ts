@@ -32,7 +32,8 @@ export interface Supplier<T> {
 export interface ProcessAction<T> extends ProcessEvent<T> {
     next(state: string): ProcessState<T>;
     then(supplier: ThenSupplier<T>): ProcessAction<T>;
-    complete(): SagaProcess<T>;
+    complete(): ProcessAction<T>;
+    build(): SagaProcess<T>;
 }
 
 export interface ProcessEvent<T> {
@@ -46,7 +47,6 @@ export interface ProcessState<T> {
 export interface Process {
     handleEvent<T>(event: Event<T>): void;
 }
-
 export class SagaProcess<T> {
 
     private duringStates: Set<string> = new Set();
@@ -74,7 +74,6 @@ export class SagaProcess<T> {
         let events = new Set<string>();
         for (let values of this.stateEvents.values()) {
             for (let value of values) {
-                logger.debug(value)
                 events.add(value);
             }
         }
@@ -130,9 +129,9 @@ const withSaga = <T>(sagaProcess: SagaProcess<T>, state: string = null, event: s
             };
         },
         then: (supplier: ThenSupplier<T>) => withSaga(sagaProcess, state, event),
-        complete: () => sagaProcess,
-        when: (event: string, supplier: WhenSupplier<T>) => withSaga(sagaProcess.when(state, event, supplier), state, event)
-
+        complete: () => withSaga(sagaProcess, state, event),
+        when: (event: string, supplier: WhenSupplier<T>) => withSaga(sagaProcess.when(state, event, supplier), state, event),
+        build: () => sagaProcess
     };
 };
 
